@@ -1,0 +1,5 @@
+name: MoonGenerator
+author: Jacob Martin (jjm_223)
+version: 1.0-SNAPSHOT
+main: me.jjm_223.moongenerator.MoonGenPlugin
+load: startup
