@@ -30,45 +30,67 @@ public class MoonCraterPopulator extends BlockPopulator
             Vector center = new BlockVector(centerX, centerY, centerZ);
 
             // Use 3 radii to make craters more irregular.
-            int radiusBase, radiusX, radiusY, radiusZ;
+            int radiusBase;
+            double radiusX, radiusY, radiusZ;
 
             if (random.nextInt(100) <= BIG_CRATER_CHANCE)
             {
                 radiusBase = random.nextInt(BIG_CRATER_SIZE - MIN_CRATER_SIZE + 1) + MIN_CRATER_SIZE;
                 radiusX = radiusBase + random.nextInt(MAX_RADIUS_VARIANCE);
-                radiusY = radiusBase + random.nextInt(MAX_RADIUS_VARIANCE);
+                radiusY = (int) (radiusBase * 0.7);
                 radiusZ = radiusBase + random.nextInt(MAX_RADIUS_VARIANCE);
             }
             else
             {
                 radiusBase = random.nextInt(SMALL_CRATER_SIZE - MIN_CRATER_SIZE + 1) + MIN_CRATER_SIZE;
                 radiusX = radiusBase + random.nextInt(MAX_RADIUS_VARIANCE);
-                radiusY = radiusBase + random.nextInt(MAX_RADIUS_VARIANCE);
+                radiusY = (int) (radiusBase * 0.7);
                 radiusZ = radiusBase + random.nextInt(MAX_RADIUS_VARIANCE);
             }
 
-            double maxRadius = Math.max(radiusX, Math.max(radiusY, radiusZ)) + 0.5;
+            radiusX += 0.5;
+            radiusY += 0.5;
+            radiusZ += 0.5;
 
-            for (int x = -radiusX; x <= radiusX; x++)
+            double irx = 1.0 / (radiusX * radiusX);
+            double iry = 1.0 / (radiusY * radiusY);
+            double irz = 1.0 / (radiusZ * radiusZ);
+
+            int radXCeil = (int) Math.ceil(radiusX);
+            int radYCeil = (int) Math.ceil(radiusY);
+            int radZCeil = (int) Math.ceil(radiusZ);
+
+            for (int cx = -radXCeil; cx < radXCeil; cx++)
             {
-                for (int y = -radiusY; y <= radiusY; y++)
+                for (int cy = -radYCeil; cy < radYCeil; cy++)
                 {
-                    for (int z = -radiusZ; z <= radiusZ; z++)
+                    for (int cz = -radZCeil; cz < radZCeil; cz++)
                     {
-                        Vector position = center.clone().add(new Vector(x, y, z));
-
-                        if (center.distance(position) <= maxRadius)
+                        if (validBlock(cx, cy, cz, irx, iry, irz))
                         {
-                            // Exclude some outer blocks to add imperfections to the crater.
-                            if (!(maxRadius - center.distance(position) < 0.5 /* increasing results in more wild imperfections */
+                            if (!(outerBlock(cx, cy, cz, irx, iry, irz)
                                     && random.nextInt(100) <= IGNORE_OUTER_BLOCK_CHANCE))
                             {
-                                world.getBlockAt(position.toLocation(world)).setType(Material.AIR);
+                                world.getBlockAt(center.clone().add(new Vector(cx, cy, cz)).toLocation(world)).setType(Material.AIR);
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    private boolean validBlock(int x, int y, int z, double irx, double iry, double irz)
+    {
+        double result = ((x * x) * irx) + ((y * y) * iry) + ((z * z) * irz);
+
+        return result < 1;
+    }
+
+    private boolean outerBlock(int x, int y, int z, double irx, double iry, double irz)
+    {
+        double result = ((x * x) * irx) + ((y * y) * iry) + ((z * z) * irz);
+
+        return Math.abs(1 - result) < 0.1;
     }
 }
